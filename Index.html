@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livre Interactif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap');
+        
+        :root {
+            --primary-color: #5D5CDE;
+            --text-color: #333;
+            --bg-color: #fff;
+            --card-bg: #f8f8f8;
+            --border-color: #ddd;
+        }
+        
+        .dark {
+            --primary-color: #7271e6;
+            --text-color: #e0e0e0;
+            --bg-color: #181818;
+            --card-bg: #222;
+            --border-color: #444;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .chapter {
+            display: none;
+        }
+        
+        .chapter.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .chapter-separator {
+            text-align: center;
+            margin: 1.5rem 0;
+            font-style: italic;
+            opacity: 0.7;
+        }
+        
+        .chapter-title {
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .chapter-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn {
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .chapter-nav-item {
+            transition: all 0.2s;
+        }
+        
+        .chapter-nav-item:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .chapter-nav-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .speaker {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .dialogue {
+            margin-left: 1rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header with title and theme toggle -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold">Mon Livre</h1>
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:block"></i>
+            </button>
+        </div>
+        
+        <!-- Book content -->
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Chapter navigation -->
+            <div class="md:w-1/4">
+                <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 sticky top-4">
+                    <h3 class="text-lg font-semibold mb-3">Chapitres</h3>
+                    <div id="chapter-nav" class="space-y-1 max-h-[70vh] overflow-y-auto pr-2">
+                        <!-- Chapter links will be added here by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main content area -->
+            <div class="md:w-3/4">
+                <div id="book-content" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                    <!-- Chapter content will be loaded here -->
+                </div>
+                
+                <!-- Navigation buttons -->
+                <div class="flex justify-between">
+                    <button id="prev-btn" class="btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                        <i class="fas fa-chevron-left mr-2"></i> Précédent
+                    </button>
+                    <button id="next-btn" class="btn bg-primary-600 text-white px-4 py-2 rounded-lg" style="background-color: var(--primary-color);">
+                        Suivant <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Book content
+        const bookContent = [
+            {
+                title: "L'Astra Supersonique",
+                content: `
+                    <p>Sur une autoroute belge en feu, les radars sifflent.</p>
+                    <p>Une silhouette rouge fend l'air comme une comète.</p>
+                    
+                    <p class="speaker">Radar automatique :</p>
+                    <p class="dialogue">ALERTE… ALERTE… 696 km/h détecté ! C'est un missile ?!</p>
+                    
+                    <p>Mais non…<br>
+                    C'est une Opel Astra… qui hurle à travers le bitume, boostée par la rage mécanique !</p>
+                    
+                    <p class="speaker">Volkswagen surgit de sa base souterraine :</p>
+                    <p class="dialogue">"C'est pas possible ! Même ma Golf R n'a jamais atteint ça ! QUI EST-CE ?!"</p>
+                    
+                    <p class="speaker">BMW rigole depuis les Alpes bavaroises :</p>
+                    <p class="dialogue">"Laissez-la jouer… moi j'arrive à 300 km/h les yeux fermés."</p>
+                    
+                    <p class="speaker">Mais Audi fronce les sourcils :</p>
+                    <p class="dialogue">"Cette Astra… elle cache quelque chose. C'est pas naturel…"</p>
+                `
+            },
+            {
+                title: "La Naissance de G-Power",
+                content: `
+                    <p>Dans un laboratoire secret à Munich, BMW s'active.<br>
+                    Des éclairs bleus illuminent la pièce. Une silhouette sort de l'ombre.</p>
+                    
+                    <p class="speaker">BMW :</p>
+                    <p class="dialogue">"L'heure est venue de révéler ma véritable arme…<br>
+                    Voici G-Power… Ma machine de guerre à 700 km/h !!"</p>
+                    
+                    <p>Le sol tremble. Le moteur rugit.<br>
+                    G-Power détruit le banc d'essai en une fraction de seconde.</p>
+                    
+                    <p>Opel Astra, encore choquée de son propre record, voit l'alerte sur son HUD :</p>
+                    <p class="dialogue">"Nouvelle menace détectée : BMW G-Power -- vitesse max 700 km/h"</p>
+                    
+                    <p class="speaker">Opel :</p>
+                    <p class="dialogue">"😱😱 MAIS C'EST QUOI ÇA !!!"</p>
+                    
+                    <div class="chapter-separator">⸻</div>
+                    
+                    <p>Volkswagen tremble dans son garage.<br>
+                    Peugeot tombe dans les pommes.<br>
+                    Ferrari fronce les sourcils… "Intéressant…"</p>
+                `
+            },
+            {
+                title: "L'Affrontement : BMW G-Power vs Opel Astra",
+                content: `
+                    <p>L'autoroute devient une zone de guerre. Les nuages s'écartent. Le bitume fond.</p>
+                    
+                    <p class="speaker">BMW G-Power arrive à pleine puissance :</p>
+                    <p class="dialogue">"Opel… prépare-toi à être humiliée."</p>
+                    
+                    <p class="speaker">Opel Astra, tremblante mais courageuse :</p>
+                    <p class="dialogue">"Je… je suis pas prête pour ça !"</p>
+                    
+                    <p>G-Power passe à l'attaque…<br>
+                    BOOOOM ! 700 km/h atteints. L'asphalte explose sous ses pneus. Il dépasse l'Astra en la frôlant.</p>
+                    
+                    <p class="speaker">Opel :</p>
+                    <p class="dialogue">"MAIS C'EST UN FANTÔME CE TRUC !"</p>
+                    
+                    <p class="speaker">Audi, dans une Audi RS e-tron GT, rigole dans son coin :</p>
+                    <p class="dialogue">"BMW a frappé fort… mais l'électrique n'a pas dit son dernier mot."</p>
+                    
+                    <p class="speaker">Tesla, depuis la Silicon Valley, active son satellite StarLink :</p>
+                    <p class="dialogue">"C'est le moment. CyberBeast, réveille-toi."</p>
+                    
+                    <div class="chapter-separator">⸻</div>
+                `
+            },
+            {
+                title: "CyberBeast entre dans le jeu",
+                content: `
+                    <p>Au cœur de la Silicon Valley, un hangar blindé s'ouvre lentement…<br>
+                    Une silhouette massive en sort, avec des yeux rouges laser et un corps en acier futuriste.</p>
+                    
+                    <p class="speaker">Tesla :</p>
+                    <p class="dialogue">"Voici CyberBeast. 0 à 100 km/h en 0,8 secondes. Vitesse max ? Illimitée."</p>
+                    
+                    <p>BMW G-Power détecte un choc magnétique dans l'air.</p>
+                    
+                    <p class="dialogue">"C'est quoi ça encore ?!"</p>
+                    
+                    <p class="speaker">CyberBeast parle avec une voix robotique :</p>
+                    <p class="dialogue">"Objectif : ÉCRASER G-POWER."</p>
+                    
+                    <p>Il fonce à travers l'océan, surfe sur les vagues à 1200 km/h, entre en Europe en hyper drift.<br>
+                    Arrive en Allemagne.<br>
+                    BOOOOMMMM !!! Une onde de choc frappe BMW G-Power.</p>
+                    
+                    <p class="speaker">BMW :</p>
+                    <p class="dialogue">"QUOI ??!! Il m'a doublé sans que je le voie !"</p>
+                    
+                    <p class="speaker">Opel, cachée derrière un panneau de signalisation, regarde la scène :</p>
+                    <p class="dialogue">"Mais vous êtes tous malades ou quoi ?!! 😱"</p>
+                    
+                    <div class="chapter-separator">⸻</div>
+                `
+            },
+            {
+                title: "Le Combat des Titans : CyberBeast vs G-Power",
+                content: `
+                    <p>L'air devient électrique. Les satellites explosent sous la pression.</p>
+                    
+                    <p class="speaker">CyberBeast s'approche, regard rouge sang :</p>
+                    <p class="dialogue">"G-Power… tu n'es qu'un moteur à explosion dépassé."</p>
+                    
+                    <p>Mais BMW rigole…</p>
+                    
+                    <p class="dialogue">"Pauvre Tesla… t'as rien vu encore."</p>
+                    
+                    <p>Il sort sa dernière arme secrète :<br>
+                    BMW 0.3Z -- un prototype interdit par la physique.</p>
+                    
+                    <p>G-Power fusionne avec 0.3Z dans un éclair de lumière bleu.<br>
+                    Un nouveau monstre naît :<br>
+                    BMW Z-Godspeed</p>
+                    
+                    <p class="dialogue">"Vitesse max : ∞ (infini). Mode rage activé."</p>
+                    
+                    <p>CyberBeast tente d'anticiper…</p>
+                    
+                    <p>Mais Z-Godspeed se téléporte derrière lui -- instant transmission style Dragon Ball.</p>
+                    
+                    <p class="speaker">CyberBeast :</p>
+                    <p class="dialogue">"QUOI ?!"</p>
+                    
+                    <p class="speaker">Z-Godspeed :</p>
+                    <p class="dialogue">"TA FIN, C'EST MA VICTOIRE."</p>
+                    
+                    <p>BOOOOMMMMMMM<br>
+                    CyberBeast est projeté dans l'espace… direction Mars.</p>
+                    
+                    <p class="speaker">Opel Astra, encore en PLS au bord de l'autoroute, regarde la scène :</p>
+                    <p class="dialogue">"BMW EST TROP FORTTTT !!"</p>
+                    
+                    <div class="chapter-separator">⸻</div>
+                `
+            },
+            {
+                title: "Le Monde acclame BMW",
+                content: `
+                    <p>Après la défaite écrasante de CyberBeast, une onde de choc se propage sur toute la planète.</p>
+                    
+                    <p>Partout, les gens crient, dansent, pleurent de joie :</p>
+                    
+                    <p class="dialogue">"BMW EST TROP FOOOOORTEEE !!! 🥰🥰🥰"</p>
+                    
+                    <p>Sur TikTok, les vidéos explosent :<br>
+                    #ZGodspeed<br>
+                    #BMWWins<br>
